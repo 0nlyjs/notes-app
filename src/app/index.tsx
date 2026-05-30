@@ -3,34 +3,38 @@ import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import NoteEditor from '@/components/NoteEditor';
-import NotesList, { Note } from '@/components/NotesList';
+import NotesList, { ColorFamily, Note } from '@/components/NotesList';
 import { ThemedView } from '@/components/themed-view';
 
-// Premium high-quality sample notes to showcase the typography and visual layout
+// Premium high-quality sample notes, pre-assigned beautiful multi-color categories
 const INITIAL_NOTES: Note[] = [
   {
     id: '1',
     title: '💡 Startup Ideas & Musings',
     content: '1. A collaborative local-first markdown editor with native peer-to-peer syncing using CRDTs.\n\n2. Micro-CRM designed specifically for freelance developers that integrates directly with GitHub issues, milestones, and pull requests.\n\n3. An automated gardening assistant that polls local weather API data and sends alerts when soil moisture falls below threshold.',
     updatedAt: '2026-05-30T10:00:00.000Z',
+    colorFamily: 'emerald', // Ideas category
   },
   {
     id: '2',
     title: '🛒 Weekly Grocery List',
     content: '- Fresh organic baby spinach & mixed microgreens\n- Unsweetened almond milk & Greek yogurt\n- Whole grain sourdough bread from artisanal local bakery\n- Fresh blueberries, avocados, and heirloom tomatoes\n- Dark roast whole coffee beans (Ethiopian Yirgacheffe or Sumatran)',
     updatedAt: '2026-05-30T09:15:00.000Z',
+    colorFamily: 'amber', // Personal category
   },
   {
     id: '3',
     title: '⚡ React Native Styling Guidelines',
     content: 'Keep layout elements decoupled from presentation components. Always use StyleSheet.create for memory efficiency and performance optimization.\n\nMake sure to implement useWindowDimensions() when designing listings to support responsive views on web and tablet interfaces smoothly.\n\nAlways leverage StyleSheet.compose or StyleSheet.flatten for merging conditional styles cleanly without inline bloating.',
     updatedAt: '2026-05-29T18:40:00.000Z',
+    colorFamily: 'indigo', // Work category
   },
   {
     id: '4',
     title: '📅 Meeting Notes - Project Alpha Sprint',
     content: 'Attendees: Sarah, David, Alex\n\nDiscussion Points:\n- Reviewed the initial high-fidelity interactive mockups. The responsive typography and view layouts feel extremely premium.\n- David suggested using a persistent SQL-based SQLite database for full production, but transient React state is perfect for our UI/UX layout verification.\n- Action Item: Sarah to review automated integration testing suite next Tuesday.',
     updatedAt: '2026-05-29T14:30:00.000Z',
+    colorFamily: 'purple', // Important category
   },
 ];
 
@@ -68,7 +72,7 @@ export default function HomeScreen() {
   };
 
   // Save/Update note and return to Notes Listing (View 1)
-  const handleSaveNote = (title: string, content: string) => {
+  const handleSaveNote = (title: string, content: string, colorFamily: ColorFamily) => {
     const trimmedTitle = title.trim();
     const trimmedContent = content.trim();
 
@@ -88,6 +92,7 @@ export default function HomeScreen() {
                 ...note,
                 title: trimmedTitle || 'Untitled Note',
                 content: trimmedContent,
+                colorFamily: colorFamily,
                 updatedAt: new Date().toISOString(),
               }
             : note
@@ -99,6 +104,7 @@ export default function HomeScreen() {
         id: Date.now().toString(),
         title: trimmedTitle || 'Untitled Note',
         content: trimmedContent,
+        colorFamily: colorFamily,
         updatedAt: new Date().toISOString(),
       };
       setNotes((prevNotes) => [newNote, ...prevNotes]);
@@ -115,7 +121,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaProvider>
-      <ThemedView style={{ flex: 1, backgroundColor: isDarkMode ? '#000000' : '#ffffff' }}>
+      <ThemedView style={{ flex: 1, backgroundColor: isDarkMode ? '#0F172A' : '#F8FAFC' }}>
         {currentScreen === 'list' ? (
           <NotesList
             notes={notes}

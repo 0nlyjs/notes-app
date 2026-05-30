@@ -13,14 +13,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { Colors, Spacing } from '@/constants/theme';
 
-import { Note } from './NotesList';
+import { CARD_PALETTES, ColorFamily, getCategoryName, Note } from './NotesList';
 
 interface NoteEditorProps {
   note: Note | null;
-  onSave: (title: string, content: string) => void;
+  onSave: (title: string, content: string, colorFamily: ColorFamily) => void;
   onBack: () => void;
   isDarkMode: boolean;
 }
@@ -28,6 +27,7 @@ interface NoteEditorProps {
 export default function NoteEditor({ note, onSave, onBack, isDarkMode }: NoteEditorProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [colorFamily, setColorFamily] = useState<ColorFamily>('indigo');
   
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -37,25 +37,27 @@ export default function NoteEditor({ note, onSave, onBack, isDarkMode }: NoteEdi
     if (note) {
       setTitle(note.title);
       setContent(note.content);
+      setColorFamily(note.colorFamily || 'indigo');
     } else {
       setTitle('');
       setContent('');
+      setColorFamily('indigo');
     }
   }, [note]);
 
   const activeColors = Colors[isDarkMode ? 'dark' : 'light'];
+  
+  // Dynamic palette highlighting based on active bubble choice
+  const activePalette = CARD_PALETTES[isDarkMode ? 'dark' : 'light'][colorFamily];
 
   const handleSave = () => {
-    onSave(title, content);
+    onSave(title, content, colorFamily);
   };
 
-  // Responsive design calculations
   const isTablet = width >= 600;
   const editorMaxWidth = 800;
   const marginHorizontal = isTablet ? (width - editorMaxWidth) / 2 : 0;
-  
-  // Dynamic header heights based on layout
-  const headerHeight = isTablet ? 180 : 140;
+  const headerHeight = isTablet ? 185 : 145;
 
   // Flatten styles as requested by the styling rules (using StyleSheet.flatten)
   const editorContainerStyle = StyleSheet.flatten([
@@ -71,7 +73,7 @@ export default function NoteEditor({ note, onSave, onBack, isDarkMode }: NoteEdi
     styles.titleInput,
     {
       color: activeColors.text,
-      borderColor: isDarkMode ? '#2D3139' : '#E4E5EB',
+      borderColor: activePalette.accent, // Dynamic accent border color matches chosen category color!
     },
   ]);
 
@@ -101,9 +103,16 @@ export default function NoteEditor({ note, onSave, onBack, isDarkMode }: NoteEdi
               <ThemedText style={styles.glassButtonText}>⬅</ThemedText>
             </Pressable>
 
-            <ThemedText style={styles.headerTitle}>
-              {note ? 'Edit Note' : 'New Note'}
-            </ThemedText>
+            <View style={styles.titleWrapper}>
+              <ThemedText style={styles.headerTitle}>
+                {note ? 'Edit Note' : 'New Note'}
+              </ThemedText>
+              <View style={[styles.miniBadge, { backgroundColor: activePalette.badgeBg }]}>
+                <ThemedText style={[styles.miniBadgeText, { color: activePalette.text }]}>
+                  {getCategoryName(colorFamily)}
+                </ThemedText>
+              </View>
+            </View>
 
             {/* Save Button */}
             <Pressable
@@ -131,6 +140,38 @@ export default function NoteEditor({ note, onSave, onBack, isDarkMode }: NoteEdi
           ]}
           keyboardShouldPersistTaps="handled">
           
+          {/* Category/Color Selector Row */}
+          <View style={styles.colorSelectorContainer}>
+            <ThemedText style={[styles.selectorLabel, { color: activeColors.textSecondary }]}>
+              Category:
+            </ThemedText>
+            <View style={styles.colorBubblesRow}>
+              {(['indigo', 'emerald', 'amber', 'rose', 'cyan', 'purple'] as ColorFamily[]).map((family) => {
+                const palette = CARD_PALETTES[isDarkMode ? 'dark' : 'light'][family];
+                const isSelected = colorFamily === family;
+                
+                return (
+                  <Pressable
+                    key={family}
+                    onPress={() => setColorFamily(family)}
+                    style={({ pressed }) => [
+                      styles.colorBubble,
+                      {
+                        backgroundColor: palette.accent,
+                        borderColor: isDarkMode ? '#F8FAFC' : '#0F172A',
+                        borderWidth: isSelected ? 2.5 : 0,
+                      },
+                      pressed && { opacity: 0.7, transform: [{ scale: 0.9 }] },
+                    ]}>
+                    {isSelected && (
+                      <ThemedText style={styles.bubbleCheck}>✓</ThemedText>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+          
           {/* Note Title Input */}
           <TextInput
             placeholder="Title"
@@ -154,12 +195,12 @@ export default function NoteEditor({ note, onSave, onBack, isDarkMode }: NoteEdi
                 color: activeColors.text,
                 fontSize: isTablet ? 18 : 16,
                 lineHeight: isTablet ? 26 : 22,
-                minHeight: height - headerHeight - 150, // Ensures input takes up bulk of screen
+                minHeight: height - headerHeight - 190,
               },
             ]}
             multiline
             textAlignVertical="top"
-            scrollEnabled={false} // Handled by outer ScrollView
+            scrollEnabled={false} // Managed by ScrollView container
           />
         </ScrollView>
       </View>
@@ -176,7 +217,7 @@ const styles = StyleSheet.create({
   },
   headerOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 12, 30, 0.45)', // Premium dark tint overlay
+    backgroundColor: 'rgba(15, 12, 30, 0.45)', // Tinted glass overlay
     paddingHorizontal: Spacing.four,
     justifyContent: 'center',
   },
@@ -185,13 +226,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  titleWrapper: {
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#FFFFFF',
     textShadowColor: 'rgba(0, 0, 0, 0.25)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+    letterSpacing: -0.5,
+  },
+  miniBadge: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
+    borderRadius: Spacing.one,
+  },
+  miniBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   glassButton: {
     paddingHorizontal: Spacing.three,
@@ -218,6 +275,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 15,
+    fontWeight: '700',
   },
   editorContainer: {
     flex: 1,
@@ -226,13 +284,43 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     flexGrow: 1,
   },
+  colorSelectorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.four,
+    gap: Spacing.three,
+  },
+  selectorLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  colorBubblesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  colorBubble: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bubbleCheck: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '900',
+  },
   titleInput: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '800',
     paddingVertical: Spacing.two,
-    marginBottom: Spacing.three,
-    borderBottomWidth: 1,
+    marginBottom: Spacing.four,
+    borderBottomWidth: 2.5,
     fontFamily: 'normal',
+    letterSpacing: -0.5,
   },
   contentInput: {
     flex: 1,
